@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<title>月光边境</title>
+<meta name="keywords" content="关键词" />
+<meta name="description" content="描述" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<th:block th:include="common/style::style" />
+</head>
+<body>
+	<div class="container">
+		<div class="panel">
+			<div class="panel-head">
+				<form th:action="@{/common/list}">
+					<input type="hidden" name="table" th:value="${page.pd[table]}" />
+					<input type="button" class="button border-green" value="新增" onclick="openView('新增','@{/common/toAdd}')" />
+					<input name="keyword" th:value="${page.pd[keyword] }" type="text" style="margin-left: 50px" class="input input-auto border-main" placeholder="输入关键字"/> 
+					<input type="submit" value="搜索" class="button  bg-main" style="border-left: 0 none;margin-left: -10px;border-top-left-radius:0;border-bottom-left-radius:0" />
+				</form>
+			</div>
+			<div style="overflow-x: scroll">
+				<table class="table">
+					<tr th:each="data:${datas}">
+						<td><pre th:text="${data}"></pre></td>
+					</tr>
+				</table>
+			</div>
+			<div class="panel-foot text-center">
+				<form th:action="@{/common/list}">
+					<input type="hidden" name="table" th:value="${page.pd[table]}" />
+					<input type="hidden" name="keyword" th:value="${page.pd[keyword]}" />
+					<th:block th:include="common/pagination::pagination"/>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<div th:fragment="pagination">
+	<div class="margin"> 
+	<script type="text/javascript">
+		function jumpPage(obj) {
+			$(obj).parents('form').find('input[name="currentPage"]').val($(obj).attr('data-num'));
+			$(obj).parents('form').submit();
+		}
+	</script>
+	<input type="hidden" name="currentPage" th:value="${page.currentPage}" />
+	<ul class="pagination border-main">
+		<li th:if="${page.currentPage!=1 and page.totalPage!=0}"><a href="javascript:;" onclick="jumpPage(this)" data-num="1">首页</a></li>
+		<li th:each="num:${page.nums}" th:class="${page.currentPage==num}?'active':''"><a href="javascript:;" onclick="jumpPage(this)" th:attr="data-num=${num}" th:text="${num}"></a></li>
+		<li th:if="${page.currentPage!=page.totalPage and page.totalPage!=0}"><a href="javascript:;" onclick="jumpPage(this)" th:attr="data-num=${page.totalPage}">末页</a></li>
+		<li><a>共<span class="text-yellow" th:text="${page.totalPage }"></span>页</a></li>
+	</ul>
+	<div class="button-group">
+		<select name="showCount" class="input border-main" onchange="$(this).parents('form').submit()">
+			<option value="5" th:selected="${page.showCount==5}">5</option>
+			<option value="10" th:selected="${page.showCount==10}">10</option>
+			<option value="20" th:selected="${page.showCount==20}">20</option>
+		</select>
+	</div>
+	</div>
+</div>
