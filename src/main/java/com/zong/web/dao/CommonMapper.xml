@@ -1,11 +1,99 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.zong.web.dao.CommonMapper">
-	<select id="find" resultType="com.zong.util.PageData">
-		select * from ${table}
-	</select>
+	<!-- 插入对象指定属性的字段 -->
+	<insert id="insert">
+		insert into ${table}
+		(
+		<foreach collection="pd.keys" item="key" separator=",">
+			${key}
+		</foreach>
+		)
+		values(
+		<foreach collection="pd.keys" item="key" separator=",">
+			#{pd.${key}}
+		</foreach>
+		)
+	</insert>
 	
+	<insert id="delete">
+		delete from ${table} where 1=1
+		<foreach collection="pd.keys" item="key" separator=",">
+			and ${key}=#{pd.${key}}
+		</foreach>
+	</insert>
+
+	<insert id="insertBatch" parameterType="com.zong.util.PageData">
+		insert into ${table}
+		(
+		<foreach collection="datas[0].keys" item="key" separator=",">
+			${key}
+		</foreach>
+		)
+		values
+		<foreach collection="datas" item="data" separator=",">
+			(
+			<foreach collection="datas[0].keys" item="key" separator=",">
+				#{data.${key}}
+			</foreach>
+			)
+		</foreach>
+	</insert>
+
+	<update id="update">
+		update ${table}
+		<foreach collection="pd.keys" item="key" open="set" separator=",">
+			${key} = #{pd.${key}}
+		</foreach>
+		where
+		<foreach collection="idPd.keys" item="key" separator="and">
+			${key} = #{idPd.${key}}
+		</foreach>
+	</update>
+
+	<select id="find" resultType="com.zong.util.PageData">
+		select * from ${table} where 1=1
+		<foreach collection="pd.keys" item="key">
+			<if test='key!="asc" and key!="desc" and key!="like"'>
+				and ${key} = #{pd.${key}}
+			</if>
+			<if test='key=="like" and pd.like!=null'>
+				<foreach collection="pd.like.keys" item="k">
+					<if test='pd.like[k]!=null and pd.like[k]!=""'>
+						and ${k} like '%${pd.like[k]}%'
+					</if>
+				</foreach>
+			</if>
+		</foreach>
+		<foreach collection="pd.keys" item="key">
+			<if test='key=="asc" or key=="desc"'>
+				order by ${pd[key]} ${key}
+			</if>
+		</foreach>
+	</select>
+
 	<select id="findPage" resultType="com.zong.util.PageData">
-		select * from ${table}
+		select * from ${table} where 1=1
+		<foreach collection="pd.keys" item="key">
+			<if test='key!="asc" and key!="desc" and key!="like"'>
+				and ${key} = #{pd.${key}}
+			</if>
+			<if test='key=="like" and pd.like!=null'>
+				<foreach collection="pd.like.keys" item="k">
+					<if test='pd.like[k]!=null and pd.like[k]!=""'>
+						and ${k} like '%${pd.like[k]}%'
+					</if>
+				</foreach>
+			</if>
+		</foreach>
+		<foreach collection="pd.keys" item="key">
+			<if test='key=="asc" or key=="desc"'>
+				order by ${pd[key]} ${key}
+			</if>
+		</foreach>
+	</select>
+
+	<select id="count" resultType="java.lang.Integer">
+		select count(1) from ${table}
 	</select>
 </mapper>

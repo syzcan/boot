@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 
@@ -31,6 +32,7 @@ import com.alibaba.druid.pool.DruidDataSourceFactory;
 @SpringBootApplication
 @ComponentScan
 @MapperScan(basePackages = "com.zong.**.dao")
+@EnableTransactionManagement
 public class Application extends SpringBootServletInitializer {
 	private static Logger logger = LoggerFactory.getLogger(Application.class);
 
