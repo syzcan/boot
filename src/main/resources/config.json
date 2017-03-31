@@ -1,0 +1,14 @@
+{
+	#获取数据库表信息连接配置
+	"dbs":[
+		{
+			"dbname": "zboot",
+			"jdbc.driverClassName": "com.mysql.jdbc.Driver",
+			"jdbc.url": "jdbc:mysql://localhost:3306/good",
+			"jdbc.username": "root",
+			"jdbc.password": "Zong",
+			#mysql数据库名称
+			"jdbc.database": "good"
+		}
+	]
+}

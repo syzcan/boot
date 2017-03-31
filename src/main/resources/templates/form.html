@@ -1,0 +1,23 @@
+<form id="dataForm" onsubmit="return false" class="form-x margin" method="post">
+	<div class="form-group" th:each="column:${columns}" th:if="${column.column!='id'}" >
+		<div class="label">
+			<label th:text="${column.column}"></label>
+		</div>
+		<div class="field">
+			<input type="text" th:if="${column.columnType!='text'}"
+				th:name="${column.column}"
+				th:readonly="${column.type=='Date'}"
+				th:onclick="${column.type=='Date'?'laydate()':''}"
+				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.type}"
+				class="input input-auto" size="20" />
+			<textarea th:if="${column.columnType=='text'}" 
+				th:name="${column.column}"
+				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.type}"
+				class="input" style="width: 400px;height: 100px"></textarea>	
+		</div>
+	</div>
+	<div class="text-right margin-top">
+		<button class="button bg-main">保存</button>
+	</div>
+</form>
+<script type="text/javascript" th:src="@{/js/pintuer.js}"></script>

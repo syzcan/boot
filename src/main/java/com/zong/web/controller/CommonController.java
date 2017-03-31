@@ -1,7 +1,15 @@
 package com.zong.web.controller;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,12 +21,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zong.base.BaseController;
 import com.zong.util.BusinessException;
+import com.zong.util.Config;
 import com.zong.util.Page;
 import com.zong.util.PageData;
+import com.zong.web.dbclient.service.JdbcCodeService;
 import com.zong.web.service.CommonService;
 
 /**
@@ -31,8 +42,61 @@ import com.zong.web.service.CommonService;
 public class CommonController extends BaseController {
 	private Logger logger = LoggerFactory.getLogger(CommonController.class);
 	private static ObjectMapper objectMapper = new ObjectMapper();
+	private static String dbname;
+	private static JdbcCodeService codeService;
+	static {
+		try {
+			// 加载zdb.jar工具获取数据库和表信息的配置
+			codeService = new JdbcCodeService();
+			Map config = Config.getConfigData();
+			Map db = ((List<Map>) config.get("dbs")).get(0);
+			dbname = db.get("dbname").toString();
+		} catch (Exception e) {
+			dbname = null;
+		}
+	}
 	@Autowired
 	private CommonService commonService;
+
+	/**
+	 * 获取当前数据库的所有表，在config.json额外配置数据库信息
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/tables", method = RequestMethod.GET)
+	public PageData tables() {
+		PageData pd = new PageData("errMsg", "success");
+		try {
+			pd.put("data", codeService.showTables(dbname));
+		} catch (Exception e) {
+			pd.put("errMsg", "数据库文件config.json配置错误");
+		}
+		return pd;
+	}
+
+	/**
+	 * 获取表的所有列详细信息
+	 * 
+	 * @param tableName
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/tables/{tableName}", method = RequestMethod.GET)
+	public PageData table(@PathVariable String tableName) {
+		PageData pd = new PageData("errMsg", "success");
+		try {
+			PageData table = new PageData("table", tableName);
+			table.put("columns", codeService.showTableColumns(dbname, tableName));
+			pd.put("data", table);
+		} catch (Exception e) {
+			pd.put("errMsg", "数据库文件config.json配置错误");
+		}
+		return pd;
+	}
+
+	@RequestMapping
+	public String index(Model model) {
+		model.addAttribute("tables", codeService.showTables(dbname));
+		return "/index";
+	}
 
 	/**
 	 * 查询列表页面
@@ -44,10 +108,11 @@ public class CommonController extends BaseController {
 		Page page = super.getPage();
 		page.setTable(table);
 		List<PageData> list = commonService.findPage(page);
-		List<String> datas = new ArrayList<String>();
+		List<PageData> datas = new ArrayList<PageData>();
 		for (PageData pageData : list) {
 			try {
-				datas.add(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(pageData));
+				datas.add(new PageData("data", pageData).put("json",
+						objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(pageData)));
 			} catch (Exception e) {
 				logger.error(e.toString(), e);
 			}
@@ -55,6 +120,18 @@ public class CommonController extends BaseController {
 		model.addAttribute("datas", datas);
 		model.addAttribute("table", table);
 		return "/list";
+	}
+
+	/**
+	 * 渲染表单
+	 * 
+	 * @param table
+	 */
+	@RequestMapping("/{table}/form")
+	public String form(@PathVariable String table, Model model) {
+		model.addAttribute("table", table);
+		model.addAttribute("columns", codeService.showTableColumns(dbname, table));
+		return "/form";
 	}
 
 	/**
@@ -148,7 +225,7 @@ public class CommonController extends BaseController {
 		PageData pd = new PageData("errMsg", "success");
 		try {
 			commonService.delete(table, new PageData("id", id));
-			logger.info("删除 {} 数据 id=", table, id);
+			logger.info("删除 {} 数据 id={}", table, id);
 		} catch (BusinessException e) {
 			logger.warn(e.getErrMsg());
 			pd.put("errMsg", e.getErrMsg());
@@ -159,4 +236,45 @@ public class CommonController extends BaseController {
 		return pd;
 	}
 
+	/**
+	 * 上传附件
+	 * 
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
+	public Map<String, String> uploadFile(MultipartFile file, HttpServletRequest request) {
+		Map<String, String> map = new HashMap<String, String>();
+		map.put("fileName", file.getOriginalFilename());
+		map.put("url", this.upload(file, request));
+		return map;
+	}
+
+	/**
+	 * 
+	 * @param file
+	 * @param uploadPath 文件保存位置
+	 * @return 返回附件访问路径
+	 */
+	private String upload(MultipartFile file, HttpServletRequest request) {
+		// 文件目录按时间归类文件夹
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+		String dateDir = dateFormat.format(new Date());
+		String path = "upload/" + dateDir;
+		Random random = new Random();
+		String extName = "";
+		if (file.getOriginalFilename().lastIndexOf(".") >= 0) {
+			extName = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+		}
+		path += "/" + random.nextInt(10000) + System.currentTimeMillis() + extName;
+		File f = new File(request.getSession().getServletContext().getRealPath("/" + path));
+		if (!f.getParentFile().exists()) {
+			f.getParentFile().mkdirs();
+		}
+		try {
+			file.transferTo(f);
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		}
+		return path;
+	}
 }

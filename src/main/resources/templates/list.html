@@ -12,26 +12,148 @@
 	<div class="container">
 		<div class="panel">
 			<div class="panel-head">
-				<form th:action="@{'/common/'+${table}+'/list'}">
-					<input type="button" class="button border-green" value="新增" onclick="openView('新增','@{/common/toAdd}')" />
-					<input name="keyword" th:value="${page.pd[keyword] }" type="text" style="margin-left: 50px" class="input input-auto border-main" placeholder="输入关键字"/> 
-					<input type="submit" value="搜索" class="button  bg-main" style="border-left: 0 none;margin-left: -10px;border-top-left-radius:0;border-bottom-left-radius:0" />
+				<form id="searchForm" th:action="@{'/common/'+${table}+'/list'}">
+					<input type="button" class="button border-green" value="新增" onclick="toAdd()" />
+					<select class="input input-auto border-main">
+						<option value="">列名</option>
+					</select>
+					<input id="keyword" type="text" style="margin-left: -5px;" class="input input-auto border-main" placeholder="输入关键字"/> 
+					<input type="submit" value="搜索" class="button bg-main" style="border-left: 0 none;margin-left: -10px;border-top-left-radius:0;border-bottom-left-radius:0" />
 				</form>
 			</div>
-			<div style="overflow-x: scroll">
+			<div id="list">
 				<table class="table">
-					<tr th:each="data:${datas}">
-						<td><pre th:text="${data}"></pre></td>
-					</tr>
+					<thead>
+						<tr>
+							<th>数据</th>
+							<th width="120">操作</th>
+						</tr>
+					</thead>
+<!-- 					<tr th:each="data:${datas}"> -->
+<!-- 						<td><pre th:text="${data.json}"></pre></td> -->
+<!-- 						<td> -->
+<!-- 						<a href="javascript:;" class="button border-blue button-little" th:onclick="'toEdit(\''+${data.data.id}+'\')'">编辑</a> -->
+<!-- 						<a href="javascript:;" class="button border-red button-little" th:onclick="'del(\''+${data.data.id}+'\')'">删除</a> -->
+<!-- 						</td> -->
+<!-- 					</tr> -->
+					<tbody>
+						<tr>
+							<td><pre></pre></td>
+							<td>
+								<a href="javascript:;" class="button border-blue button-little">编辑</a>
+								<a href="javascript:;" class="button border-red button-little">删除</a>
+							</td>
+						</tr>
+					</tbody>
 				</table>
 			</div>
 			<div class="panel-foot text-center">
-				<form th:action="@{/common/'+${table}+'/list}">
-					<input type="hidden" name="keyword" th:value="${page.pd[keyword]}" />
+				<form id="pageForm" th:action="@{'/common/'+${table}+'/list'}">
 					<th:block th:include="common/pagination::pagination"/>
 				</form>
 			</div>
 		</div>
 	</div>
 </body>
+<script type="text/javascript">
+	$(function(){
+		$.get('[(@{/})]common/tables/[(${table})].json').done(function(data){
+			$.each(data.data.columns,function(i,n){
+				$('#searchForm select').append('<option value="'+n.column+'">'+n.column+'</option>');
+			});
+		});
+		$('select').on('change',function(){
+			$('#keyword').attr('name',$(this).val());
+		});
+		// 列表
+		listData();
+	});
+	function listData(){
+		$.get('[(@{/})]common/[(${table})].json?'+zutil.formData($('#pageForm'))).done(function(data){
+			var $tr = $('#list tbody tr').first().remove();
+			$.each(data.data,function(i,n){
+				$tr = $tr.clone();
+				$tr.find('pre').html(JSON.stringify(n, null, 2));
+				$tr.find('a').first().attr('onclick','toEdit(\''+n['id']+'\')')
+				$tr.find('a').last().attr('onclick','del(\''+n['id']+'\')')
+				$('#list tbody').append($tr);
+			});
+		});
+	}
+	function toAdd(){
+		$.get('[(@{/})]common/[(${table})]/form').done(function(data){
+			layer.open({
+				title:'新增',
+				type:1,
+				shadeClose: true,
+				area:['600px','400px'],
+				content:data
+			});
+			$('#dataForm button').click(function(){
+				var $form = $('#dataForm');
+				$form.attr('action','[(@{/})]common/[(${table})].json');
+				$form.find(':input[data-type]').each(function(){
+					if($.trim($(this).val())==''){
+						$(this).attr('name','');
+					}
+				});
+				$form.ajaxSubmit(function(){
+					zutil.restful($form,'POST');
+				});
+			});
+		});
+	}
+	function toEdit(id){
+		$.get('[(@{/})]common/[(${table})]/form').done(function(form){
+			$.get('[(@{/})]common/[(${table})]/'+id+'.json').done(function(data){
+				layer.open({
+					title:'修改',
+					type:1,
+					shadeClose: true,
+					area:['600px','400px'],
+					content:form
+				});
+				// 回填
+				$('#dataForm :input').each(function(){
+					$(this).val(data.data[$(this).attr('name')]);
+				});
+				$('#dataForm button').click(function(){
+					var $form = $('#dataForm');
+					$form.attr('action','[(@{/})]common/[(${table})]/'+id+'.json');
+					$form.find(':input[data-type]').each(function(){
+						if($.trim($(this).val())==''){
+							$(this).attr('name','');
+						}
+					});
+					$form.ajaxSubmit(function(){
+						zutil.restful($form,'PUT');
+					});
+				});
+			});
+		});
+	}
+	function del(id){
+		layer.confirm('确定删除吗？', {
+			shadeClose : true,
+			btn : [ '确定','取消' ]
+		}, function() {
+			var url = '[(@{/})]common/[(${table})]/'+id+'.json';
+			$.ajax({
+				url : url,
+				type : 'DELETE',
+				dataType : 'json',
+				success : function(data){
+					if(data.errMsg=='success'){
+						layer.msg('删除成功');
+						location.href = location.href;
+					}else{
+						layer.msg(data.errMsg);
+					}
+				}
+			});
+		}, function() {
+			layer.close(layer.index);
+		});
+	}
+</script>
 </html>

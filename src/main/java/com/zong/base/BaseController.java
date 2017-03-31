@@ -25,6 +25,9 @@ public class BaseController {
 	 */
 	public Page getPage() {
 		Page page = new Page(getPageData());// 分页组件封装查询参数
+		// pd移除分页查询的参数
+		page.getPd().remove("currentPage");
+		page.getPd().remove("showCount");
 		this.getRequest().setAttribute("page", page);// 分页组件页面展示
 		return page;
 	}

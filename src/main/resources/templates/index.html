@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<title>月光边境</title>
+<meta name="keywords" content="关键词" />
+<meta name="description" content="描述" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<th:block th:include="common/style::style" />
+</head>
+<body>
+	<div class="container">
+		<div class="panel-head">
+			数据库所有表
+		</div>
+		<div class="panel">
+			<div>
+				<table class="table">
+					<thead>
+						<tr>
+							<th>表名</th>
+							<th>描述</th>
+							<th width="120">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+	$(function(){
+		var url = '[(@{/})]common/tables.json';
+		$.get(url).done(function(data){
+			$.each(data.data,function(i,n){
+				$('tbody').append('<tr><td>'+n.tableName+'</td><td>'+(n.comment==null?'':n.comment)+'</td><td><a class="button border-main button-little" href="[(@{/})]common/'+n.tableName+'/list" target="_blank">查看</a></td></tr>');
+			});
+		});
+	});
+</script>
+</html>

@@ -54,7 +54,7 @@
 	<select id="find" resultType="com.zong.util.PageData">
 		select * from ${table} where 1=1
 		<foreach collection="pd.keys" item="key">
-			<if test='key!="asc" and key!="desc" and key!="like"'>
+			<if test='key!="asc" and key!="desc" and key!="like" and pd[key]!=""'>
 				and ${key} = #{pd.${key}}
 			</if>
 			<if test='key=="like" and pd.like!=null'>
@@ -75,7 +75,7 @@
 	<select id="findPage" resultType="com.zong.util.PageData">
 		select * from ${table} where 1=1
 		<foreach collection="pd.keys" item="key">
-			<if test='key!="asc" and key!="desc" and key!="like"'>
+			<if test='key!="asc" and key!="desc" and key!="like" and pd[key]!=""'>
 				and ${key} = #{pd.${key}}
 			</if>
 			<if test='key=="like" and pd.like!=null'>

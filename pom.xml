@@ -11,6 +11,11 @@
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>1.5.2.RELEASE</version>
 	</parent>
+	<!-- spring-boot-starter-thymeleaf默认使用2.0的，使用3.0需要这里指定 -->
+	<properties>
+		<thymeleaf.version>3.0.2.RELEASE</thymeleaf.version>
+		<thymeleaf-layout-dialect.version>2.1.1</thymeleaf-layout-dialect.version>
+	</properties>
 	<dependencies>
 		<!-- 引入web功能，包含了springmvc、tomcat内置容器等 -->
 		<dependency>
