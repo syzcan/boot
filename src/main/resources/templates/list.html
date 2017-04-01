@@ -61,9 +61,9 @@
 			$.each(data.data.columns,function(i,n){
 				$('#searchForm select').append('<option value="'+n.column+'">'+n.column+'</option>');
 			});
-		});
-		$('select').on('change',function(){
-			$('#keyword').attr('name',$(this).val());
+			$('#searchForm select').on('change',function(){
+				$('#keyword').attr('name',$(this).val());
+			});
 		});
 		// 列表
 		listData();
@@ -115,7 +115,12 @@
 				});
 				// 回填
 				$('#dataForm :input').each(function(){
-					$(this).val(data.data[$(this).attr('name')]);
+					val = data.data[$(this).attr('name')];
+					// long时间戳格式化
+					if($(this).attr('data-type')=='TIMESTAMP' && !isNaN(val)){
+						val = new Date(parseInt(val)).Format('yyyy-MM-dd HH:mm:ss');
+					}
+					$(this).val(val);
 				});
 				$('#dataForm button').click(function(){
 					var $form = $('#dataForm');

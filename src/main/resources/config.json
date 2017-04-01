@@ -4,11 +4,11 @@
 		{
 			"dbname": "zboot",
 			"jdbc.driverClassName": "com.mysql.jdbc.Driver",
-			"jdbc.url": "jdbc:mysql://localhost:3306/good",
+			"jdbc.url": "jdbc:mysql://localhost:3306/zboot",
 			"jdbc.username": "root",
 			"jdbc.password": "Zong",
 			#mysql数据库名称
-			"jdbc.database": "good"
+			"jdbc.database": "zboot"
 		}
 	]
 }

@@ -4,15 +4,14 @@
 			<label th:text="${column.column}"></label>
 		</div>
 		<div class="field">
-			<input type="text" th:if="${column.columnType!='text'}"
+			<input type="text" th:if="${column.columnType!='text' and column.columnType!='clob'}"
 				th:name="${column.column}"
-				th:readonly="${column.type=='Date'}"
-				th:onclick="${column.type=='Date'?'laydate()':''}"
-				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.type}"
+				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.jdbcType}"
+				th:readonly="${column.jdbcType=='TIMESTAMP'}"
 				class="input input-auto" size="20" />
-			<textarea th:if="${column.columnType=='text'}" 
+			<textarea th:if="${column.columnType=='text' or column.columnType=='clob'}" 
 				th:name="${column.column}"
-				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.type}"
+				th:attr="data-validate=${column.canNull=='NO'?'required:必填':''},data-type=${column.jdbcType}"
 				class="input" style="width: 400px;height: 100px"></textarea>	
 		</div>
 	</div>
@@ -21,3 +20,14 @@
 	</div>
 </form>
 <script type="text/javascript" th:src="@{/js/pintuer.js}"></script>
+<script type="text/javascript">
+$('#dataForm input[data-type="INTEGER"]').keyup(function(){
+	this.value=this.value.replace(/\D/g,'');
+});
+$('#dataForm input[data-type="DECIMAL"]').keyup(function(){
+	this.value=this.value.replace(/[^\d.]/g,'');
+});
+$('#dataForm input[data-type="TIMESTAMP"]').click(function(){
+	laydate({istime: true, format: 'YYYY-MM-DD hh:mm:ss'});
+});
+</script>
