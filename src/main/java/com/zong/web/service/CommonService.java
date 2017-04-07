@@ -77,7 +77,7 @@ public class CommonService {
 		for (Object key : columns.keySet()) {
 			sql += key + " " + columns.getString(key) + ",";
 		}
-		sql += ")";
+		sql = sql.substring(0, sql.lastIndexOf(",")) + ")";
 		commonMapper.executeSql(sql);
 	}
 
