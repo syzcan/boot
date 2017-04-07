@@ -92,12 +92,12 @@
 			$('#dataForm button').click(function(){
 				var $form = $('#dataForm');
 				$form.attr('action','[(@{/})]common/[(${table})].json');
-				$form.find(':input[data-type]').each(function(){
-					if($.trim($(this).val())==''){
-						$(this).attr('name','');
-					}
-				});
 				$form.ajaxSubmit(function(){
+					$form.find(':input[data-type]').each(function(){
+						if($.trim($(this).val())==''){
+							$(this).attr('name','');
+						}
+					});
 					zutil.restful($form,'POST');
 				});
 			});
@@ -125,12 +125,12 @@
 				$('#dataForm button').click(function(){
 					var $form = $('#dataForm');
 					$form.attr('action','[(@{/})]common/[(${table})]/'+id+'.json');
-					$form.find(':input[data-type]').each(function(){
-						if($.trim($(this).val())==''){
-							$(this).attr('name','');
-						}
-					});
 					$form.ajaxSubmit(function(){
+						$form.find(':input[data-type]').each(function(){
+							if($.trim($(this).val())==''){
+								$(this).attr('name','');
+							}
+						});
 						zutil.restful($form,'PUT');
 					});
 				});

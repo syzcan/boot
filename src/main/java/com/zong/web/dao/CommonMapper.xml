@@ -96,4 +96,8 @@
 	<select id="count" resultType="java.lang.Integer">
 		select count(1) from ${table}
 	</select>
+	
+	<select id="executeSql" resultType="com.zong.util.PageData">
+		${sql}
+	</select>
 </mapper>
