@@ -54,17 +54,15 @@ public class CrawController extends BaseController {
 	@ResponseBody
 	@RequestMapping("/list")
 	public PageData list() {
-		PageData result = new PageData("errMsg", "success");
+		PageData result;
 		try {
 			PageData pd = super.getPageData();
-			PageData pageData = JsoupUtil.parseList(pd);
-			saveData(pd, (List<PageData>) pageData.get("data"));
-			result.put("data", (List<PageData>) pageData.get("data"));
-			if (result.get(JsoupUtil.CRAW_NEXT) != null) {
-				result.put(JsoupUtil.CRAW_NEXT, pageData.getString(JsoupUtil.CRAW_NEXT));
-			}
+			result = JsoupUtil.parseList(pd);
+			saveData(pd, (List<PageData>) result.get("data"));
+			result.put("errMsg", "success");
 		} catch (Exception e) {
 			logger.error(e.toString(), e);
+			result = new PageData("errMsg", "系统错误");
 		}
 		return result;
 	}

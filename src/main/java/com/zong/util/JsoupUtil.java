@@ -2,6 +2,8 @@ package com.zong.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,18 +28,21 @@ public class JsoupUtil {
 	public static final String CRAW_ITEM = "craw_item";
 	// 列表下一页规则参数，作为参数名返回下一页地址
 	public static final String CRAW_NEXT = "craw_next";
+	public static final String CRAW_NEXT_REG = "craw_next_reg";
 	/**
 	 * 扩展规则参数，post请求参数title=
-	 * a|attr|href|array,其中RULE_EXT_NAME=title,参数值按|分割对应分别下面各项
+	 * a;attr[reg];href;array,其中RULE_EXT_NAME=title,参数值按;分割对应分别下面各项
 	 */
 	public static final String RULE_EXT_NAME = "rule_ext_name";
 	public static final String RULE_EXT_CSS = "rule_ext_css";
-	// text/html/attr
+	// text/html/attr/url【分页方式】
 	public static final String RULE_EXT_TYPE = "rule_ext_type";
 	// href/src/title
 	public static final String RULE_EXT_ATTR = "rule_ext_attr";
 	// string/array，默认string返回字符串，array返回数组
 	public static final String RULE_EXT_MODE = "rule_ext_mode";
+	// 内容正则表达式过滤提取
+	public static final String RULE_EXT_REG = "rule_ext_reg";
 	// 基本存储表结构字段
 	public static final String STORE_TABLE_COL_ID = "id";
 	public static final String STORE_TABLE_COL_TITLE = "title";
@@ -55,7 +60,6 @@ public class JsoupUtil {
 		PageData result = new PageData();
 		String craw_url = request.getString(CRAW_URL);
 		String craw_item = request.getString(CRAW_ITEM);
-		String craw_next = request.getString(CRAW_NEXT);
 		List<PageData> extFields = extFields(request);
 		Document document = Jsoup.connect(craw_url).timeout(60 * 1000).userAgent(USER_AGENT).get();
 		Elements elements = document.select(craw_item);
@@ -65,9 +69,21 @@ public class JsoupUtil {
 			list.add(data);
 		}
 		result.put("data", list);
-		if (craw_next != null) {
-			String next_url = parseElementAttr(document.select("body").first(),
-					new PageData(RULE_EXT_CSS, craw_next).put(RULE_EXT_ATTR, "href"), craw_url).toString();
+		String craw_next = request.getString(CRAW_NEXT);
+		if (craw_next != null && !craw_next.equals("")) {
+			PageData ext = extField(CRAW_NEXT, craw_next);
+			String next_url = "";
+			if ("url".equals(ext.getString(RULE_EXT_TYPE))) {
+				Pattern pattern = Pattern.compile(ext.getString(RULE_EXT_REG));
+				Matcher matcher = pattern.matcher(craw_url);
+				if (matcher.find()) {
+					String pageContent = matcher.group(0);
+					int nextPage = Integer.parseInt(matcher.group(1)) + 1;
+					next_url = craw_url.replace(pageContent, pageContent.replace(matcher.group(1), nextPage + ""));
+				}
+			} else if ("attr".equals(ext.getString(RULE_EXT_TYPE))) {
+				next_url = parseElementAttr(document.select("body").first(), ext, craw_url).toString();
+			}
 			result.put(CRAW_NEXT, next_url);
 		}
 		return result;
@@ -97,19 +113,31 @@ public class JsoupUtil {
 					|| key.equals(CRAW_ITEM) || key.equals(CRAW_NEXT)) {
 				continue;
 			}
-			PageData ext = new PageData(RULE_EXT_NAME, key.toString());
-			String[] vals = request.getString(key).split("\\|");
-			ext.put(RULE_EXT_CSS, vals[0]);
-			ext.put(RULE_EXT_TYPE, vals[1]);
-			if (vals.length > 2) {
-				ext.put(RULE_EXT_ATTR, vals[2]);
-			}
-			if (vals.length > 3) {
-				ext.put(RULE_EXT_MODE, vals[3]);
-			}
-			fields.add(ext);
+			fields.add(extField(key.toString(), request.getString(key)));
 		}
 		return fields;
+	}
+
+	private static PageData extField(String key, String value) {
+		String[] vals = value.split(";");
+		PageData ext = new PageData(RULE_EXT_NAME, key);
+		ext.put(RULE_EXT_CSS, vals[0]);
+		// 正则表达式分离 RULE_EXT_TYPE[RULE_EXT_REG]
+		Pattern pattern = Pattern.compile("\\[(.+?)\\]");
+		Matcher matcher = pattern.matcher(vals[1]);
+		if (matcher.find()) {
+			ext.put(RULE_EXT_TYPE, vals[1].replace(matcher.group(0), ""));
+			ext.put(RULE_EXT_REG, matcher.group(1));
+		} else {
+			ext.put(RULE_EXT_TYPE, vals[1]);
+		}
+		if (vals.length > 2) {
+			ext.put(RULE_EXT_ATTR, vals[2]);
+		}
+		if (vals.length > 3) {
+			ext.put(RULE_EXT_MODE, vals[3]);
+		}
+		return ext;
 	}
 
 	/**
@@ -119,7 +147,7 @@ public class JsoupUtil {
 	 * @param element
 	 * @param extFields
 	 */
-	private static PageData parseExt(String craw_url, Element element, List<PageData> extFields) {
+	public static PageData parseExt(String craw_url, Element element, List<PageData> extFields) {
 		PageData data = new PageData();
 		for (PageData ext : extFields) {
 			if ("text".equals(ext.getString(RULE_EXT_TYPE))) {
@@ -158,7 +186,16 @@ public class JsoupUtil {
 		if (cssQuery == null || "".equals(cssQuery)) {
 			return null;
 		}
+		// 由于jsoup的:eq(n)用法跟jquery不一样，这里做处理实现和jquery一样的效果
 		if (cssQuery.indexOf(":eq") > -1) {
+			Pattern pattern = Pattern.compile(":eq\\((\\d+)\\)");
+			Matcher matcher = pattern.matcher(cssQuery);
+			if (matcher.find()) {
+				String css1 = cssQuery.split(matcher.group(0))[0];
+				String css2 = cssQuery.split(matcher.group(0))[1];
+				Element e = element.select(css1).get(Integer.parseInt(matcher.group(1)));
+				System.out.println(matcher.group(1));
+			}
 			String css1 = cssQuery.substring(0, cssQuery.indexOf(":eq"));
 			String css2 = cssQuery.substring(cssQuery.indexOf(":eq") + 6);
 			String index = cssQuery.substring(cssQuery.indexOf(":eq") + 3, cssQuery.indexOf(":eq") + 6).replace("(", "")
@@ -174,6 +211,12 @@ public class JsoupUtil {
 		}
 	}
 
+	/**
+	 * 解析当前标签元素text
+	 * 
+	 * @param element
+	 * @param ext 扩展字段封装
+	 */
 	public static Object parseElementText(Element element, PageData ext) {
 		Object object = parseElement(element, ext.getString(RULE_EXT_CSS));
 		if (object != null) {
@@ -181,27 +224,34 @@ public class JsoupUtil {
 				if ("array".equals(ext.getString(RULE_EXT_MODE))) {
 					List<String> list = new ArrayList<String>();
 					for (Element e : (Elements) object) {
-						list.add(e.text());
+						String text = dealExtReg(e.text(), ext);
+						list.add(text);
 					}
 					return list;
 				} else {
 					if (!((Elements) object).isEmpty()) {
-						return ((Elements) object).get(0).text();
+						return dealExtReg(((Elements) object).get(0).text(), ext);
 					}
 				}
 			} else {
 				if ("array".equals(ext.getString(RULE_EXT_MODE))) {
 					List<String> list = new ArrayList<String>();
-					list.add(((Element) object).text());
+					list.add(dealExtReg(((Element) object).text(), ext));
 					return list;
 				} else {
-					return ((Element) object).text();
+					return dealExtReg(((Element) object).text(), ext);
 				}
 			}
 		}
 		return "";
 	}
 
+	/**
+	 * 解析当前标签元素html
+	 * 
+	 * @param element
+	 * @param ext 扩展字段封装
+	 */
 	public static Object parseElementHtml(Element element, PageData ext) {
 		Object object = parseElement(element, ext.getString(RULE_EXT_CSS));
 		if (object != null) {
@@ -209,27 +259,35 @@ public class JsoupUtil {
 				if ("array".equals(ext.getString(RULE_EXT_MODE))) {
 					List<String> list = new ArrayList<String>();
 					for (Element e : (Elements) object) {
-						list.add(e.html());
+						list.add(dealExtReg(e.html(), ext));
 					}
 					return list;
 				} else {
 					if (!((Elements) object).isEmpty()) {
-						return ((Elements) object).get(0).html();
+						return dealExtReg(((Elements) object).get(0).html(), ext);
 					}
 				}
 			} else {
 				if ("array".equals(ext.getString(RULE_EXT_MODE))) {
 					List<String> list = new ArrayList<String>();
-					list.add(((Element) object).html());
+					list.add(dealExtReg(((Element) object).html(), ext));
 					return list;
 				} else {
-					return ((Element) object).html();
+					return dealExtReg(((Element) object).html(), ext);
 				}
 			}
 		}
 		return "";
 	}
 
+	/**
+	 * 解析当前标签元素attr
+	 * 
+	 * @param element
+	 * @param ext
+	 * @param craw_url 当前爬取地址
+	 * @return
+	 */
 	public static Object parseElementAttr(Element element, PageData ext, String craw_url) {
 		String attr = ext.getString(RULE_EXT_ATTR);
 		Object object = parseElement(element, ext.getString(RULE_EXT_CSS));
@@ -261,14 +319,35 @@ public class JsoupUtil {
 
 	private static String dealAttr(String val, PageData ext, String craw_url) {
 		// src和href等链接判断是否加http和项目路径
-		if ("src".equals(ext.getString(RULE_EXT_ATTR)) || "href".equals(ext.getString(RULE_EXT_ATTR))) {
+		if ("src".equals(ext.getString(RULE_EXT_ATTR)) || "href".equals(ext.getString(RULE_EXT_ATTR))
+				|| "data-src".equals(ext.getString(RULE_EXT_ATTR))
+				|| "data-href".equals(ext.getString(RULE_EXT_ATTR))) {
 			val = dealLink(craw_url, val);
+		}
+		return dealExtReg(val, ext);
+	}
+
+	/**
+	 * 字段提取内容正则表达式进一步过滤
+	 * 
+	 * @param val
+	 * @param ext 扩展字段封装
+	 * @return
+	 */
+	private static String dealExtReg(String val, PageData ext) {
+		String ext_reg = ext.getString(RULE_EXT_REG);
+		if (ext_reg != null && !"".equals(ext_reg)) {
+			Pattern pattern = Pattern.compile(ext_reg);
+			Matcher matcher = pattern.matcher(val);
+			if (matcher.find()) {
+				val = matcher.group(1);
+			}
 		}
 		return val;
 	}
 
 	/**
-	 * 构造基本存储的表结构的基本字段
+	 * 构造基本存储的表结构的基本字段mysql
 	 */
 	public static PageData baseTableColumns() {
 		return new PageData(STORE_TABLE_COL_ID, "int(11) NOT NULL PRIMARY KEY auto_increment COMMENT 'mysql自增主键'")
@@ -293,12 +372,17 @@ public class JsoupUtil {
 					&& !key.equals(STORE_TABLE_COL_TITLE) && !key.equals(STORE_TABLE_COL_URL)
 					&& !key.equals(STORE_TABLE_COL_CONTENT) && !key.equals(STORE_TABLE_COL_STATUS)
 					&& !key.equals(STORE_TABLE_COL_CREATE_TIME)) {
-				columns.put(key, "text");
+				columns.put(key, "varchar(500)");
 			}
 		}
 		return columns;
 	}
 
+	/**
+	 * 构造存储表名称，CRAW_STORE_TABLE作为表前缀
+	 * 
+	 * @param tableName
+	 */
 	public static String storeTable(String tableName) {
 		return CRAW_STORE_TABLE + "_" + tableName;
 	}
