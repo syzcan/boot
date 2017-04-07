@@ -73,18 +73,18 @@ public class CommonService {
 	}
 
 	public void createTable(String tableName, PageData columns) {
-		String sql = "create table " + tableName + "(id int(11) NOT NULL auto_increment,";
+		String sql = "create table " + tableName + "(";
 		for (Object key : columns.keySet()) {
 			sql += key + " " + columns.getString(key) + ",";
 		}
-		sql += "PRIMARY KEY  (id))";
+		sql += ")";
 		commonMapper.executeSql(sql);
 	}
 
 	public void alterTable(String tableName, PageData columns) {
 		String database = url.split("\\?")[0].substring(url.lastIndexOf("/") + 1);
-		String sql = "select * from information_schema.columns where table_schema=\'" + database
-				+ "\' and table_name=\'" + tableName + "\'";
+		String sql = "select * from information_schema.columns where table_schema='" + database + "' and table_name='"
+				+ tableName + "'";
 		List<PageData> datas = commonMapper.executeSql(sql);
 		for (Object key : columns.keySet()) {
 			boolean flag = true;

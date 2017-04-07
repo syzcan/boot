@@ -22,6 +22,12 @@ public class CrawController extends BaseController {
 	@Autowired
 	private CommonService commonService;
 
+	/**
+	 * 解析任何页面
+	 * 
+	 * @param craw_url 抓取地址【必须】
+	 * @param exts 非craw_*关键参数的其他扩展规则
+	 */
 	@ResponseBody
 	@RequestMapping("/data")
 	public PageData data() {
@@ -36,15 +42,27 @@ public class CrawController extends BaseController {
 		return result;
 	}
 
+	/**
+	 * 解析列表页面
+	 * 
+	 * @param craw_url 抓取地址【必须】
+	 * @param craw_item 条目规则【必须】
+	 * @param craw_next 下一页规则
+	 * @param craw_store 存储表名，只有指定才保存到数据库
+	 * @param exts 非craw_*关键参数的其他扩展规则
+	 */
 	@ResponseBody
 	@RequestMapping("/list")
 	public PageData list() {
 		PageData result = new PageData("errMsg", "success");
 		try {
 			PageData pd = super.getPageData();
-			List<PageData> data = JsoupUtil.parseList(pd);
-			saveData(pd, data);
-			result.put("data", data);
+			PageData pageData = JsoupUtil.parseList(pd);
+			saveData(pd, (List<PageData>) pageData.get("data"));
+			result.put("data", (List<PageData>) pageData.get("data"));
+			if (result.get(JsoupUtil.CRAW_NEXT) != null) {
+				result.put(JsoupUtil.CRAW_NEXT, pageData.getString(JsoupUtil.CRAW_NEXT));
+			}
 		} catch (Exception e) {
 			logger.error(e.toString(), e);
 		}
@@ -54,15 +72,9 @@ public class CrawController extends BaseController {
 	private void saveData(PageData pd, List<PageData> data) {
 		String craw_store = pd.getString(JsoupUtil.CRAW_STORE_TABLE);
 		if (craw_store != null && !"".equals(craw_store)) {
+			craw_store = JsoupUtil.storeTable(craw_store);
 			PageData table = commonService.findTable(craw_store);
-			PageData columns = new PageData("title", "varchar(255)").put("url", "varchar(255) NOT NULL UNIQUE KEY")
-					.put("content", "longtext").put("create_time", "datetime");
-			for (Object key : pd.keySet()) {
-				if (!key.equals(JsoupUtil.CRAW_URL) && !key.equals(JsoupUtil.CRAW_STORE_TABLE)
-						&& !key.equals(JsoupUtil.RULE_ITEM) && !key.equals(JsoupUtil.RULE_NEXT)) {
-					columns.put(key, "text");
-				}
-			}
+			PageData columns = JsoupUtil.baseTableColumns(pd);
 			if (table == null) {
 				commonService.createTable(craw_store, columns);
 			} else {
@@ -70,7 +82,7 @@ public class CrawController extends BaseController {
 			}
 			for (PageData pageData : data) {
 				try {
-					commonService.add(craw_store, pageData.put("create_time", new Date()));
+					commonService.add(craw_store, pageData.put(JsoupUtil.STORE_TABLE_COL_CREATE_TIME, new Date()));
 					logger.info("抓取插入 {} : {}", craw_store, pageData.get("url"));
 				} catch (Exception e) {
 					logger.warn(e.toString());
