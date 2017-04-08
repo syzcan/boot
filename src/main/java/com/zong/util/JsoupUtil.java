@@ -188,27 +188,46 @@ public class JsoupUtil {
 		}
 		// 由于jsoup的:eq(n)用法跟jquery不一样，这里做处理实现和jquery一样的效果
 		if (cssQuery.indexOf(":eq") > -1) {
-			Pattern pattern = Pattern.compile(":eq\\((\\d+)\\)");
-			Matcher matcher = pattern.matcher(cssQuery);
-			if (matcher.find()) {
-				String css1 = cssQuery.split(matcher.group(0))[0];
-				String css2 = cssQuery.split(matcher.group(0))[1];
-				Element e = element.select(css1).get(Integer.parseInt(matcher.group(1)));
-				System.out.println(matcher.group(1));
-			}
-			String css1 = cssQuery.substring(0, cssQuery.indexOf(":eq"));
-			String css2 = cssQuery.substring(cssQuery.indexOf(":eq") + 6);
-			String index = cssQuery.substring(cssQuery.indexOf(":eq") + 3, cssQuery.indexOf(":eq") + 6).replace("(", "")
-					.replace(")", "");
-			Element e = element.select(css1).get(Integer.parseInt(index));
-			if (!css2.equals("")) {
-				return e.select(css2);
-			}
-			return e;
+			return patternEq(element, cssQuery);
 		} else {
 			Elements es = element.select(cssQuery);
 			return es;
 		}
+	}
+
+	/**
+	 * 处理cssQuery查询赛选:eq，实现跟jquery一样用法
+	 * 
+	 * @param element
+	 * @param cssQuery
+	 * @return
+	 */
+	private static Object patternEq(Element element, String cssQuery) {
+		String[] csses = cssQuery.split(":eq\\((\\d+)\\)");
+		List<String> eqs = new ArrayList<String>();
+		Pattern pattern = Pattern.compile(":eq\\((\\d+)\\)");
+		Matcher matcher = pattern.matcher(cssQuery);
+		while (matcher.find()) {
+			eqs.add(matcher.group(0));
+		}
+		Object target = element;
+		int i = 0;
+		while (i < csses.length) {
+			Element tmpE = null;
+			if (target instanceof Element) {
+				tmpE = (Element) target;
+			} else if (target instanceof Elements) {
+				tmpE = ((Elements) target).first();
+			}
+			Elements es = tmpE.select(csses[i]);
+			target = es;
+			if (eqs.size() > i) {
+				String eq = eqs.get(i);
+				target = es.get(Integer.parseInt(eq.replace(":eq(", "").replace(")", "")));
+			}
+			i++;
+		}
+		return target;
 	}
 
 	/**
@@ -328,7 +347,7 @@ public class JsoupUtil {
 	}
 
 	/**
-	 * 字段提取内容正则表达式进一步过滤
+	 * 字段提取内容正则表达式进一步过滤，返回正则表达式最后一个匹配组
 	 * 
 	 * @param val
 	 * @param ext 扩展字段封装
@@ -340,7 +359,12 @@ public class JsoupUtil {
 			Pattern pattern = Pattern.compile(ext_reg);
 			Matcher matcher = pattern.matcher(val);
 			if (matcher.find()) {
-				val = matcher.group(1);
+				int gc = matcher.groupCount();
+				for (int i = 0; i <= gc; i++) {
+					if (matcher.group(i) != null) {
+						val = matcher.group(i);
+					}
+				}
 			}
 		}
 		return val;

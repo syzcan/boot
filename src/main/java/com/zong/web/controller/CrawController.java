@@ -38,6 +38,7 @@ public class CrawController extends BaseController {
 			result.put("data", data);
 		} catch (Exception e) {
 			logger.error(e.toString(), e);
+			result.put("errMsg", "系统错误");
 		}
 		return result;
 	}
