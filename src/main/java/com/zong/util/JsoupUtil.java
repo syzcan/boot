@@ -123,7 +123,7 @@ public class JsoupUtil {
 		PageData ext = new PageData(RULE_EXT_NAME, key);
 		ext.put(RULE_EXT_CSS, vals[0]);
 		// 正则表达式分离 RULE_EXT_TYPE[RULE_EXT_REG]
-		Pattern pattern = Pattern.compile("\\[(.+)\\]");
+		Pattern pattern = Pattern.compile("\\[(.*)\\]");
 		Matcher matcher = pattern.matcher(vals[1]);
 		if (matcher.find()) {
 			ext.put(RULE_EXT_TYPE, vals[1].replace(matcher.group(0), ""));
@@ -220,10 +220,17 @@ public class JsoupUtil {
 				tmpE = ((Elements) target).first();
 			}
 			Elements es = tmpE.select(csses[i]);
-			target = es;
+			if (es.isEmpty()) {
+				return null;
+			}
 			if (eqs.size() > i) {
 				String eq = eqs.get(i);
-				target = es.get(Integer.parseInt(eq.replace(":eq(", "").replace(")", "")));
+				int index = Integer.parseInt(eq.replace(":eq(", "").replace(")", ""));
+				if (index < es.size()) {
+					target = es.get(index);
+				} else {
+					return null;
+				}
 			}
 			i++;
 		}
