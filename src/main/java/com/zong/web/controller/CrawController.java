@@ -81,7 +81,7 @@ public class CrawController extends BaseController {
 			}
 			for (PageData pageData : data) {
 				try {
-					commonService.add(craw_store, pageData.put(JsoupUtil.STORE_TABLE_COL_CREATE_TIME, new Date()));
+					commonService.add(craw_store, pageData);
 					logger.info("抓取插入 {} : {}", craw_store, pageData.get("url"));
 				} catch (Exception e) {
 					logger.warn(e.toString());

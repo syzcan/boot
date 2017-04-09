@@ -1,5 +1,6 @@
 package com.zong.web.service;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zong.util.BusinessException;
+import com.zong.util.JsoupUtil;
 import com.zong.util.Page;
 import com.zong.util.PageData;
 import com.zong.web.dao.CommonMapper;
@@ -28,6 +30,7 @@ public class CommonService {
 
 	@Transactional(rollbackFor = Exception.class)
 	public void add(String table, PageData pd) throws BusinessException {
+		pd.put(JsoupUtil.STORE_TABLE_COL_CREATE_TIME, new Date());
 		commonMapper.insert(table, pd);
 	}
 

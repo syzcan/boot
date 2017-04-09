@@ -123,7 +123,7 @@ public class JsoupUtil {
 		PageData ext = new PageData(RULE_EXT_NAME, key);
 		ext.put(RULE_EXT_CSS, vals[0]);
 		// 正则表达式分离 RULE_EXT_TYPE[RULE_EXT_REG]
-		Pattern pattern = Pattern.compile("\\[(.+?)\\]");
+		Pattern pattern = Pattern.compile("\\[(.+)\\]");
 		Matcher matcher = pattern.matcher(vals[1]);
 		if (matcher.find()) {
 			ext.put(RULE_EXT_TYPE, vals[1].replace(matcher.group(0), ""));
