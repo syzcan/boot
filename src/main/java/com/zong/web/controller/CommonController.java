@@ -26,10 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zong.base.BaseController;
 import com.zong.util.BusinessException;
-import com.zong.util.Config;
 import com.zong.util.Page;
 import com.zong.util.PageData;
-import com.zong.web.dbclient.service.JdbcCodeService;
 import com.zong.web.service.CommonService;
 
 /**
@@ -42,19 +40,6 @@ import com.zong.web.service.CommonService;
 public class CommonController extends BaseController {
 	private Logger logger = LoggerFactory.getLogger(CommonController.class);
 	private static ObjectMapper objectMapper = new ObjectMapper();
-	private static String dbname;
-	private static JdbcCodeService codeService;
-	static {
-		try {
-			// 加载zdb.jar工具获取数据库和表信息的配置
-			codeService = new JdbcCodeService();
-			Map config = Config.getConfigData();
-			Map db = ((List<Map>) config.get("dbs")).get(0);
-			dbname = db.get("dbname").toString();
-		} catch (Exception e) {
-			dbname = null;
-		}
-	}
 	@Autowired
 	private CommonService commonService;
 
@@ -66,7 +51,7 @@ public class CommonController extends BaseController {
 	public PageData tables() {
 		PageData pd = new PageData("errMsg", "success");
 		try {
-			pd.put("data", codeService.showTables(dbname));
+			pd.put("data", commonService.showTables());
 		} catch (Exception e) {
 			pd.put("errMsg", "数据库文件config.json配置错误");
 		}
@@ -84,17 +69,21 @@ public class CommonController extends BaseController {
 		PageData pd = new PageData("errMsg", "success");
 		try {
 			PageData table = new PageData("table", tableName);
-			table.put("columns", codeService.showTableColumns(dbname, tableName));
+			table.put("columns", commonService.showTableColumns(tableName));
 			pd.put("data", table);
 		} catch (Exception e) {
-			pd.put("errMsg", "数据库文件config.json配置错误");
+			pd.put("errMsg", "系统错误");
 		}
 		return pd;
 	}
 
 	@RequestMapping
 	public String index(Model model) {
-		model.addAttribute("tables", codeService.showTables(dbname));
+		try {
+			model.addAttribute("tables", commonService.showTables());
+		} catch (Exception e) {
+			model.addAttribute("errMsg", "系统错误");
+		}
 		return "/index";
 	}
 
@@ -129,8 +118,12 @@ public class CommonController extends BaseController {
 	 */
 	@RequestMapping("/{table}/form")
 	public String form(@PathVariable String table, Model model) {
-		model.addAttribute("table", table);
-		model.addAttribute("columns", codeService.showTableColumns(dbname, table));
+		try {
+			model.addAttribute("table", table);
+			model.addAttribute("columns", commonService.showTableColumns(table));
+		} catch (Exception e) {
+			model.addAttribute("errMsg", "系统错误");
+		}
 		return "/form";
 	}
 

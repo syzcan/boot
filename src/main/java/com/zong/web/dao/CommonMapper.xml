@@ -15,30 +15,13 @@
 		</foreach>
 		)
 	</insert>
-	
-	<insert id="delete">
+
+	<delete id="delete">
 		delete from ${table} where 1=1
 		<foreach collection="pd.keys" item="key" separator=",">
 			and ${key}=#{pd.${key}}
 		</foreach>
-	</insert>
-
-	<insert id="insertBatch" parameterType="com.zong.util.PageData">
-		insert into ${table}
-		(
-		<foreach collection="datas[0].keys" item="key" separator=",">
-			${key}
-		</foreach>
-		)
-		values
-		<foreach collection="datas" item="data" separator=",">
-			(
-			<foreach collection="datas[0].keys" item="key" separator=",">
-				#{data.${key}}
-			</foreach>
-			)
-		</foreach>
-	</insert>
+	</delete>
 
 	<update id="update">
 		update ${table}
@@ -96,7 +79,7 @@
 	<select id="count" resultType="java.lang.Integer">
 		select count(1) from ${table}
 	</select>
-	
+
 	<select id="executeSql" resultType="com.zong.util.PageData">
 		${sql}
 	</select>

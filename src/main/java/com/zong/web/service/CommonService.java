@@ -1,5 +1,6 @@
 package com.zong.web.service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -8,11 +9,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zong.util.BusinessException;
+import com.zong.util.Config;
 import com.zong.util.JsoupUtil;
 import com.zong.util.Page;
 import com.zong.util.PageData;
 import com.zong.web.dao.CommonMapper;
+import com.zong.web.dbclient.bean.ColumnField;
+import com.zong.web.dbclient.bean.Table;
+import com.zong.web.dbclient.service.JdbcCodeService;
 
 /**
  * @desc 通用业务层
@@ -21,12 +27,20 @@ import com.zong.web.dao.CommonMapper;
  */
 @Service
 public class CommonService {
+	private static ObjectMapper objectMapper = new ObjectMapper();
 	@Autowired
 	private CommonMapper commonMapper;
+
+	private JdbcCodeService codeService;
 	@Value("${jdbc.driverClassName}")
 	private String driverClassName;
 	@Value("${jdbc.url}")
 	private String url;
+	@Value("${jdbc.username}")
+	private String username;
+	@Value("${jdbc.password}")
+	private String password;
+	private String dbname = "zboot";
 
 	@Transactional(rollbackFor = Exception.class)
 	public void add(String table, PageData pd) throws BusinessException {
@@ -50,6 +64,10 @@ public class CommonService {
 			return list.get(0);
 		}
 		return null;
+	}
+
+	public List<PageData> find(String table, PageData pd) {
+		return commonMapper.find(table, pd);
 	}
 
 	public List<PageData> findPage(Page page) {
@@ -103,4 +121,26 @@ public class CommonService {
 		}
 	}
 
+	public List<Table> showTables() throws Exception {
+		if (codeService == null) {
+			initCodeService();
+		}
+		return codeService.showTables(dbname);
+	}
+
+	public List<ColumnField> showTableColumns(String tableName) throws Exception {
+		if (codeService == null) {
+			initCodeService();
+		}
+		return codeService.showTableColumns(dbname, tableName);
+	}
+
+	private void initCodeService() throws Exception {
+		List<PageData> dbs = new ArrayList<PageData>();
+		dbs.add(new PageData("dbname", dbname).put("jdbc.driverClassName", driverClassName).put("jdbc.url", url)
+				.put("jdbc.username", username).put("jdbc.password", password));
+		PageData configData = new PageData("dbs", dbs);
+		Config.readConfig(objectMapper.writeValueAsString(configData));
+		codeService = new JdbcCodeService();
+	}
 }
