@@ -2,10 +2,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.zong</groupId>
-	<artifactId>boot</artifactId>
+	<artifactId>zboot</artifactId>
 	<packaging>war</packaging>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>boot Maven Webapp</name>
+	<name>zboot Maven Webapp</name>
 	<url>http://maven.apache.org</url>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -88,7 +88,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>boot</finalName>
+		<finalName>zboot</finalName>
 		<!-- maven编译打包时，默认会把mybatis的映射配置文件mapper.xml过滤掉 -->
 		<resources>
 			<!-- resources下的文件全部打包 -->
