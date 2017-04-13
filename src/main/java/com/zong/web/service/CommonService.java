@@ -1,6 +1,5 @@
 package com.zong.web.service;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -11,14 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zong.util.BusinessException;
-import com.zong.util.Config;
 import com.zong.util.JsoupUtil;
 import com.zong.util.Page;
 import com.zong.util.PageData;
 import com.zong.web.dao.CommonMapper;
-import com.zong.web.dbclient.bean.ColumnField;
-import com.zong.web.dbclient.bean.Table;
-import com.zong.web.dbclient.service.JdbcCodeService;
+import com.zong.zdb.bean.ColumnField;
+import com.zong.zdb.bean.Table;
+import com.zong.zdb.service.JdbcCodeService;
 
 /**
  * @desc 通用业务层
@@ -31,6 +29,7 @@ public class CommonService {
 	@Autowired
 	private CommonMapper commonMapper;
 
+	@Autowired
 	private JdbcCodeService codeService;
 	@Value("${jdbc.driverClassName}")
 	private String driverClassName;
@@ -122,25 +121,11 @@ public class CommonService {
 	}
 
 	public List<Table> showTables() throws Exception {
-		if (codeService == null) {
-			initCodeService();
-		}
-		return codeService.showTables(dbname);
+		return codeService.currentTables();
 	}
 
 	public List<ColumnField> showTableColumns(String tableName) throws Exception {
-		if (codeService == null) {
-			initCodeService();
-		}
-		return codeService.showTableColumns(dbname, tableName);
+		return codeService.currentTableColumns(tableName);
 	}
 
-	private void initCodeService() throws Exception {
-		List<PageData> dbs = new ArrayList<PageData>();
-		dbs.add(new PageData("dbname", dbname).put("jdbc.driverClassName", driverClassName).put("jdbc.url", url)
-				.put("jdbc.username", username).put("jdbc.password", password));
-		PageData configData = new PageData("dbs", dbs);
-		Config.readConfig(objectMapper.writeValueAsString(configData));
-		codeService = new JdbcCodeService();
-	}
 }

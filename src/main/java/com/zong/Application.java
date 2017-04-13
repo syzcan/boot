@@ -22,6 +22,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
+import com.zong.zdb.service.JdbcCodeService;
 
 /**
  * @desc springboot总配置类和启动入口类
@@ -63,6 +64,16 @@ public class Application extends SpringBootServletInitializer {
 		// 配置mybatis插件
 		sqlSessionFactoryBean.setConfigLocation(resolver.getResource("classpath:/mybatis-config.xml"));
 		return sqlSessionFactoryBean.getObject();
+	}
+
+	@Bean
+	public JdbcCodeService getJdbcCodeService() {
+		JdbcCodeService jdbcCodeService = JdbcCodeService.getInstance();
+		jdbcCodeService.setDriverClassName(env.getProperty("jdbc.driverClassName"));
+		jdbcCodeService.setUrl(env.getProperty("jdbc.url"));
+		jdbcCodeService.setUsername(env.getProperty("jdbc.username"));
+		jdbcCodeService.setPassword(env.getProperty("jdbc.password"));
+		return jdbcCodeService;
 	}
 
 	/**
