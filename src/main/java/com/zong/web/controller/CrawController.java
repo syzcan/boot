@@ -1,6 +1,5 @@
 package com.zong.web.controller;
 
-import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -14,6 +13,7 @@ import com.zong.base.BaseController;
 import com.zong.util.JsoupUtil;
 import com.zong.util.PageData;
 import com.zong.web.service.CommonService;
+import com.zong.zdb.bean.Table;
 
 @Controller
 @RequestMapping("/craw")
@@ -68,11 +68,11 @@ public class CrawController extends BaseController {
 		return result;
 	}
 
-	private void saveData(PageData pd, List<PageData> data) {
+	private void saveData(PageData pd, List<PageData> data) throws Exception {
 		String craw_store = pd.getString(JsoupUtil.CRAW_STORE_TABLE);
 		if (craw_store != null && !"".equals(craw_store)) {
 			craw_store = JsoupUtil.storeTable(craw_store);
-			PageData table = commonService.findTable(craw_store);
+			Table table = commonService.showTable(craw_store);
 			PageData columns = JsoupUtil.baseTableColumns(pd);
 			if (table == null) {
 				commonService.createTable(craw_store, columns);
