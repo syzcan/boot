@@ -1,5 +1,4 @@
 1、application.properties设置jdbc
-  config.json设置jdbc使用zdb.jar查看表结构
 
 2、Application类启动
 

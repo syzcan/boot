@@ -49,13 +49,13 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/tables", method = RequestMethod.GET)
 	public PageData tables() {
-		PageData pd = new PageData("errMsg", "success");
+		PageData result = new PageData("errMsg", "success");
 		try {
-			pd.put("data", commonService.showTables());
+			result.put("data", commonService.showTables());
 		} catch (Exception e) {
-			pd.put("errMsg", "数据库文件config.json配置错误");
+			result.put("errMsg", "数据库文件config.json配置错误");
 		}
-		return pd;
+		return result;
 	}
 
 	/**
@@ -66,15 +66,13 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/tables/{tableName}", method = RequestMethod.GET)
 	public PageData table(@PathVariable String tableName) {
-		PageData pd = new PageData("errMsg", "success");
+		PageData result = new PageData("errMsg", "success");
 		try {
-			PageData table = new PageData("table", tableName);
-			table.put("columns", commonService.showTableColumns(tableName));
-			pd.put("data", table);
+			result.put("data", commonService.showTable(tableName));
 		} catch (Exception e) {
-			pd.put("errMsg", "系统错误");
+			result.put("errMsg", "系统错误");
 		}
-		return pd;
+		return result;
 	}
 
 	@RequestMapping
@@ -93,9 +91,17 @@ public class CommonController extends BaseController {
 	 * @param table 表名
 	 */
 	@RequestMapping("/{table}/list")
-	public String list(@PathVariable String table, Model model) {
-		Page page = super.getPage();
+	public String list(@PathVariable String table, Page page, String type, String column, String keyword, Model model) {
 		page.setTable(table);
+		if (column != null && !column.equals("") && keyword != null && !keyword.equals("")) {
+			PageData pd = new PageData();
+			if ("1".equals(type)) {
+				pd.put("like", new PageData(column, keyword));
+			} else {
+				pd.put(column, keyword);
+			}
+			page.setPd(pd);
+		}
 		List<PageData> list = commonService.findPage(page);
 		List<PageData> datas = new ArrayList<PageData>();
 		for (PageData pageData : list) {
@@ -108,6 +114,10 @@ public class CommonController extends BaseController {
 		}
 		model.addAttribute("datas", datas);
 		model.addAttribute("table", table);
+		model.addAttribute("page", page);
+		model.addAttribute("type", type);
+		model.addAttribute("column", column);
+		model.addAttribute("keyword", keyword);
 		return "/list";
 	}
 
@@ -134,14 +144,16 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}", method = RequestMethod.GET)
-	public PageData datas(@PathVariable String table) {
-		PageData pd = new PageData("errMsg", "success");
-		Page page = super.getPage();
+	public PageData datas(@PathVariable String table, Page page, String column, String keyword) {
+		PageData result = new PageData("errMsg", "success");
 		page.setTable(table);
-		page.getPd().remove("table");
-		pd.put("data", commonService.findPage(page)).put("page", page);
+		if (column != null && !column.equals("") && keyword != null && !keyword.equals("")) {
+			PageData pd = new PageData().put("like", new PageData(column, keyword));
+			page.setPd(pd);
+		}
+		result.put("data", commonService.findPage(page)).put("page", page);
 		logger.info("查询 {} 列表数据", table);
-		return pd;
+		return result;
 	}
 
 	/**
@@ -153,10 +165,10 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.GET)
 	public PageData data(@PathVariable String table, @PathVariable String id) {
-		PageData pd = new PageData("errMsg", "success");
-		pd.put("data", commonService.load(table, new PageData("id", id)));
+		PageData result = new PageData("errMsg", "success");
+		result.put("data", commonService.load(table, new PageData("id", id)));
 		logger.info("查询 {} 单条数据 id={}", table, id);
-		return pd;
+		return result;
 	}
 
 	/**
@@ -168,18 +180,18 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/{table}", method = RequestMethod.POST)
 	public PageData add(@PathVariable String table, @RequestBody PageData data) {
-		PageData pd = new PageData("errMsg", "success");
+		PageData result = new PageData("errMsg", "success");
 		try {
 			commonService.add(table, data);
 			logger.info("新增 {} 数据", table);
 		} catch (BusinessException e) {
 			logger.warn(e.getErrMsg());
-			pd.put("errMsg", e.getErrMsg());
+			result.put("errMsg", e.getErrMsg());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			pd.put("errMsg", "系统错误");
+			result.put("errMsg", "系统错误");
 		}
-		return pd;
+		return result;
 	}
 
 	/**
@@ -192,18 +204,18 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.PUT)
 	public PageData edit(@PathVariable String table, @PathVariable String id, @RequestBody PageData data) {
-		PageData pd = new PageData("errMsg", "success");
+		PageData result = new PageData("errMsg", "success");
 		try {
 			commonService.edit(table, data, new PageData("id", id));
 			logger.info("修改 {} 数据 id={}", table, id);
 		} catch (BusinessException e) {
 			logger.warn(e.getErrMsg());
-			pd.put("errMsg", e.getErrMsg());
+			result.put("errMsg", e.getErrMsg());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			pd.put("errMsg", "系统错误");
+			result.put("errMsg", "系统错误");
 		}
-		return pd;
+		return result;
 	}
 
 	/**
@@ -215,18 +227,18 @@ public class CommonController extends BaseController {
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.DELETE)
 	public PageData delete(@PathVariable String table, @PathVariable String id) {
-		PageData pd = new PageData("errMsg", "success");
+		PageData result = new PageData("errMsg", "success");
 		try {
 			commonService.delete(table, new PageData("id", id));
 			logger.info("删除 {} 数据 id={}", table, id);
 		} catch (BusinessException e) {
 			logger.warn(e.getErrMsg());
-			pd.put("errMsg", e.getErrMsg());
+			result.put("errMsg", e.getErrMsg());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			pd.put("errMsg", "系统错误");
+			result.put("errMsg", "系统错误");
 		}
-		return pd;
+		return result;
 	}
 
 	/**

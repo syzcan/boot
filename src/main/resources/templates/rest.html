@@ -11,7 +11,15 @@
 <body>
 	<div class="container">
 		<div class="panel-head">
-			数据库所有表
+			<select class="input input-auto border-main">
+				<option value="GET">GET</option>
+				<option value="POST">POST</option>
+				<option value="PUT">PUT</option>
+				<option value="DELETE">DELETE</option>
+			</select>
+			<input id="url" type="text" style="margin-left: -5px;" size="80" class="input input-auto border-main" placeholder="Enter Request URL"/> 
+			<input type="button" value="Send" class="button bg-main" style="border-left: 0 none;margin-left: -10px;border-top-left-radius:0;border-bottom-left-radius:0" />
+			<input type="button" value="Params" class="button bg-blue" />
 		</div>
 		<div class="panel">
 			<div>

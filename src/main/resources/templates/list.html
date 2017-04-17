@@ -14,10 +14,14 @@
 			<div class="panel-head">
 				<form id="searchForm" th:action="@{'/common/'+${table}+'/list'}">
 					<input type="button" class="button border-green" value="新增" onclick="toAdd()" />
-					<select class="input input-auto border-main">
+					<select name="type" class="input input-auto border-main">
+						<option value="1" th:selected="${type=='1'}">模糊查询</option>
+						<option value="2" th:selected="${type=='2'}">精确查询</option>
+					</select>
+					<select name="column" class="input input-auto border-main">
 						<option value="">列名</option>
 					</select>
-					<input id="keyword" type="text" style="margin-left: -5px;" class="input input-auto border-main" placeholder="输入关键字"/> 
+					<input name="keyword" type="text" th:value="${keyword}" style="margin-left: -5px;" class="input input-auto border-main" placeholder="输入关键字"/> 
 					<input type="submit" value="搜索" class="button bg-main" style="border-left: 0 none;margin-left: -10px;border-top-left-radius:0;border-bottom-left-radius:0" />
 				</form>
 			</div>
@@ -29,27 +33,30 @@
 							<th width="120">操作</th>
 						</tr>
 					</thead>
-<!-- 					<tr th:each="data:${datas}"> -->
-<!-- 						<td><pre th:text="${data.json}"></pre></td> -->
-<!-- 						<td> -->
-<!-- 						<a href="javascript:;" class="button border-blue button-little" th:onclick="'toEdit(\''+${data.data.id}+'\')'">编辑</a> -->
-<!-- 						<a href="javascript:;" class="button border-red button-little" th:onclick="'del(\''+${data.data.id}+'\')'">删除</a> -->
-<!-- 						</td> -->
-<!-- 					</tr> -->
-					<tbody>
-						<tr>
-							<td><pre></pre></td>
-							<td>
-								<a href="javascript:;" class="button border-blue button-little">编辑</a>
-								<a href="javascript:;" class="button border-red button-little">删除</a>
-							</td>
-						</tr>
-					</tbody>
+					<tr th:each="data:${datas}">
+						<td><pre th:text="${data.json}"></pre></td>
+						<td>
+						<a href="javascript:;" class="button border-blue button-little" th:onclick="'toEdit(\''+${data.data.id}+'\')'">编辑</a>
+						<a href="javascript:;" class="button border-red button-little" th:onclick="'del(\''+${data.data.id}+'\')'">删除</a>
+						</td>
+					</tr>
+<!-- 					<tbody> -->
+<!-- 						<tr> -->
+<!-- 							<td><pre></pre></td> -->
+<!-- 							<td> -->
+<!-- 								<a href="javascript:;" class="button border-blue button-little">编辑</a> -->
+<!-- 								<a href="javascript:;" class="button border-red button-little">删除</a> -->
+<!-- 							</td> -->
+<!-- 						</tr> -->
+<!-- 					</tbody> -->
 				</table>
 			</div>
-			<div class="panel-foot text-center">
+			<div class="panel-foot text-center" id="pagination">
 				<form id="pageForm" th:action="@{'/common/'+${table}+'/list'}">
 					<th:block th:include="common/pagination::pagination"/>
+					<input type="hidden" name="type" th:value="${type}"/>
+					<input type="hidden" name="column" th:value="${column}"/>
+					<input type="hidden" name="keyword" th:value="${keyword}"/>
 				</form>
 			</div>
 		</div>
@@ -58,15 +65,13 @@
 <script type="text/javascript">
 	$(function(){
 		$.get('[(@{/})]common/tables/[(${table})].json').done(function(data){
-			$.each(data.data.columns,function(i,n){
-				$('#searchForm select').append('<option value="'+n.column+'">'+n.column+'</option>');
+			$.each(data.data.normalColumns,function(i,n){
+				$('select[name="column"]').append('<option value="'+n.column+'">'+n.column+'</option>');
 			});
-			$('#searchForm select').on('change',function(){
-				$('#keyword').attr('name',$(this).val());
-			});
+			$('select[name="column"]').val('[(${column})]');
 		});
 		// 列表
-		listData();
+		//listData();
 	});
 	function listData(){
 		$.get('[(@{/})]common/[(${table})].json?'+zutil.formData($('#pageForm'))).done(function(data){
@@ -98,7 +103,9 @@
 							$(this).attr('name','');
 						}
 					});
-					zutil.restful($form,'POST');
+					zutil.restful($form,'POST',function(){
+						location.href = location.href;
+					});
 				});
 			});
 		});
@@ -118,7 +125,7 @@
 					val = data.data[$(this).attr('name')];
 					// long时间戳格式化
 					if($(this).attr('data-type')=='TIMESTAMP' && !isNaN(val)){
-						val = new Date(parseInt(val)).Format('yyyy-MM-dd HH:mm:ss');
+						val = new Date(parseInt(val)).Format('yyyy-MM-dd hh:mm:ss');
 					}
 					$(this).val(val);
 				});
@@ -131,7 +138,9 @@
 								$(this).attr('name','');
 							}
 						});
-						zutil.restful($form,'PUT');
+						zutil.restful($form,'PUT',function(){
+							location.href = location.href;
+						});
 					});
 				});
 			});
