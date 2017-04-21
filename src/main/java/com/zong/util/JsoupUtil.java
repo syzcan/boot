@@ -231,6 +231,8 @@ public class JsoupUtil {
 				} else {
 					return null;
 				}
+			} else {
+				target = es.first();
 			}
 			i++;
 		}
