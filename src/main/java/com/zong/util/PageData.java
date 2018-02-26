@@ -19,7 +19,6 @@ public class PageData extends HashMap implements Map, Serializable {
 
 	HttpServletRequest request;
 
-	@SuppressWarnings("unchecked")
 	public PageData(HttpServletRequest request) {
 		this.request = request;
 		Map properties = request.getParameterMap();

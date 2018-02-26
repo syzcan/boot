@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.zong.util.Page;
 import com.zong.util.PageData;
+import com.zong.util.Result;
 
 /**
  * @desc 通用查询mapper
@@ -45,7 +46,7 @@ public interface CommonMapper {
 	 * @param pd
 	 * @return
 	 */
-	List<PageData> find(@Param("table") String table, @Param("pd") PageData pd);
+	List<Result> find(@Param("table") String table, @Param("pd") PageData pd);
 
 	/**
 	 * 条件分页查询全部 select * from user where age=30 and name like '%z%' order by age
@@ -56,9 +57,9 @@ public interface CommonMapper {
 	 *            ...}
 	 * @return
 	 */
-	List<PageData> findPage(Page page);
+	List<Result> findPage(Page page);
 
 	int count(@Param("table") String table);
 
-	List<PageData> executeSql(@Param("sql") String sql);
+	List<Result> executeSql(@Param("sql") String sql);
 }

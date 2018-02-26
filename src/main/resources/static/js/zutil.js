@@ -62,13 +62,13 @@ var zutil = function() {
 			dataType : 'json',
 			data : data,
 			success : function(data) {
-				if (data.errMsg == 'success') {
+				if (data.retCode == 1) {
 					if (typeof func === "function") {
 						func(data);
 					}
 					layer.msg('操作成功');
 				} else {
-					layer.msg(data.errMsg);
+					layer.msg(data.retMsg);
 				}
 				// layer.closeAll();
 			},

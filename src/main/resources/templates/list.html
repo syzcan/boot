@@ -64,7 +64,7 @@
 </body>
 <script type="text/javascript">
 	$(function(){
-		$.get('[(@{/})]common/tables/[(${table})].json').done(function(data){
+		$.get(ctx + 'common/tables/[(${table})].json').done(function(data){
 			$.each(data.data.normalColumns,function(i,n){
 				$('select[name="column"]').append('<option value="'+n.column+'">'+n.column+'</option>');
 			});
@@ -74,9 +74,9 @@
 		//listData();
 	});
 	function listData(){
-		$.get('[(@{/})]common/[(${table})].json?'+zutil.formData($('#pageForm'))).done(function(data){
+		$.get(ctx + 'common/[(${table})].json?'+zutil.formData($('#pageForm'))).done(function(data){
 			var $tr = $('#list tbody tr').first().remove();
-			$.each(data.data,function(i,n){
+			$.each(data.rows,function(i,n){
 				$tr = $tr.clone();
 				$tr.find('pre').html(JSON.stringify(n, null, 2));
 				$tr.find('a').first().attr('onclick','toEdit(\''+n['id']+'\')')
@@ -86,7 +86,7 @@
 		});
 	}
 	function toAdd(){
-		$.get('[(@{/})]common/[(${table})]/form').done(function(data){
+		$.get(ctx + 'common/[(${table})]/form').done(function(data){
 			layer.open({
 				title:'新增',
 				type:1,
@@ -96,7 +96,7 @@
 			});
 			$('#dataForm button').click(function(){
 				var $form = $('#dataForm');
-				$form.attr('action','[(@{/})]common/[(${table})].json');
+				$form.attr('action',ctx + 'common/[(${table})].json');
 				$form.ajaxSubmit(function(){
 					$form.find(':input[data-type]').each(function(){
 						if($.trim($(this).val())==''){
@@ -111,8 +111,8 @@
 		});
 	}
 	function toEdit(id){
-		$.get('[(@{/})]common/[(${table})]/form').done(function(form){
-			$.get('[(@{/})]common/[(${table})]/'+id+'.json').done(function(data){
+		$.get(ctx + 'common/[(${table})]/form').done(function(form){
+			$.get(ctx + 'common/[(${table})]/'+id+'.json').done(function(data){
 				layer.open({
 					title:'修改',
 					type:1,
@@ -131,7 +131,7 @@
 				});
 				$('#dataForm button').click(function(){
 					var $form = $('#dataForm');
-					$form.attr('action','[(@{/})]common/[(${table})]/'+id+'.json');
+					$form.attr('action',ctx + 'common/[(${table})]/'+id+'.json');
 					$form.ajaxSubmit(function(){
 						$form.find(':input[data-type]').each(function(){
 							if($.trim($(this).val())==''){
@@ -151,17 +151,17 @@
 			shadeClose : true,
 			btn : [ '确定','取消' ]
 		}, function() {
-			var url = '[(@{/})]common/[(${table})]/'+id+'.json';
+			var url = ctx + 'common/[(${table})]/'+id+'.json';
 			$.ajax({
 				url : url,
 				type : 'DELETE',
 				dataType : 'json',
 				success : function(data){
-					if(data.errMsg=='success'){
+					if(data.retCode==1){
 						layer.msg('删除成功');
 						location.href = location.href;
 					}else{
-						layer.msg(data.errMsg);
+						layer.msg(data.retMsg);
 					}
 				}
 			});

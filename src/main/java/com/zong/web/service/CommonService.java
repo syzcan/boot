@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.zong.util.BusinessException;
 import com.zong.util.Page;
 import com.zong.util.PageData;
+import com.zong.util.Result;
 import com.zong.web.dao.CommonMapper;
 import com.zong.zdb.bean.ColumnField;
 import com.zong.zdb.bean.Table;
@@ -27,33 +27,33 @@ public class CommonService {
 	private JdbcCodeService codeService;
 
 	@Transactional(rollbackFor = Exception.class)
-	public void add(String table, PageData pd) throws BusinessException {
+	public void add(String table, PageData pd) throws Exception {
 		commonMapper.insert(table, pd);
 	}
 
 	@Transactional(rollbackFor = Exception.class)
-	public void delete(String table, PageData pd) throws BusinessException {
+	public void delete(String table, PageData pd) throws Exception {
 		commonMapper.delete(table, pd);
 	}
 
 	@Transactional(rollbackFor = Exception.class)
-	public void edit(String table, PageData pd, PageData idPd) throws BusinessException {
+	public void edit(String table, PageData pd, PageData idPd) throws Exception {
 		commonMapper.update(table, pd, idPd);
 	}
 
-	public PageData load(String table, PageData pd) {
-		List<PageData> list = commonMapper.find(table, pd);
+	public Result load(String table, PageData pd) {
+		List<Result> list = commonMapper.find(table, pd);
 		if (!list.isEmpty()) {
 			return list.get(0);
 		}
 		return null;
 	}
 
-	public List<PageData> find(String table, PageData pd) {
+	public List<Result> find(String table, PageData pd) {
 		return commonMapper.find(table, pd);
 	}
 
-	public List<PageData> findPage(Page page) {
+	public List<Result> findPage(Page page) {
 		return commonMapper.findPage(page);
 	}
 

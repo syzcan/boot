@@ -34,7 +34,7 @@
 		</foreach>
 	</update>
 
-	<select id="find" resultType="com.zong.util.PageData">
+	<select id="find" resultType="com.zong.util.Result">
 		select * from ${table} where 1=1
 		<foreach collection="pd.keys" item="key">
 			<if test='key!="asc" and key!="desc" and key!="like" and pd[key]!=""'>
@@ -55,7 +55,7 @@
 		</foreach>
 	</select>
 
-	<select id="findPage" resultType="com.zong.util.PageData">
+	<select id="findPage" resultType="com.zong.util.Result">
 		select * from ${table} where 1=1
 		<foreach collection="pd.keys" item="key">
 			<if test='key!="asc" and key!="desc" and key!="like" and pd[key]!=""'>
@@ -80,7 +80,7 @@
 		select count(1) from ${table}
 	</select>
 
-	<select id="executeSql" resultType="com.zong.util.PageData">
+	<select id="executeSql" resultType="com.zong.util.Result">
 		${sql}
 	</select>
 </mapper>

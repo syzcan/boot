@@ -4,9 +4,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,9 +23,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zong.base.BaseController;
-import com.zong.util.BusinessException;
 import com.zong.util.Page;
 import com.zong.util.PageData;
+import com.zong.util.Result;
 import com.zong.web.service.CommonService;
 
 /**
@@ -38,22 +36,33 @@ import com.zong.web.service.CommonService;
 @Controller
 @RequestMapping("/common")
 public class CommonController extends BaseController {
-	private Logger logger = LoggerFactory.getLogger(CommonController.class);
+	private Logger LOGGER = LoggerFactory.getLogger(CommonController.class);
 	private static ObjectMapper objectMapper = new ObjectMapper();
 	@Autowired
 	private CommonService commonService;
 
+	@RequestMapping
+	public String index(Model model) {
+		try {
+			model.addAttribute("tables", commonService.showTables());
+		} catch (Exception e) {
+			LOGGER.error(e.toString(), e);
+		}
+		return "/index";
+	}
+
 	/**
-	 * 获取当前数据库的所有表，在config.json额外配置数据库信息
+	 * 获取当前数据库的所有表，通过JdbcCodeService获取数据库信息
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/tables", method = RequestMethod.GET)
-	public PageData tables() {
-		PageData result = new PageData("errMsg", "success");
+	public Result tables() {
+		Result result = Result.success();
 		try {
-			result.put("data", commonService.showTables());
+			result.put("rows", commonService.showTables());
 		} catch (Exception e) {
-			result.put("errMsg", "数据库文件config.json配置错误");
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
 		return result;
 	}
@@ -65,24 +74,15 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/tables/{tableName}", method = RequestMethod.GET)
-	public PageData table(@PathVariable String tableName) {
-		PageData result = new PageData("errMsg", "success");
+	public Result table(@PathVariable String tableName) {
+		Result result = Result.success();
 		try {
 			result.put("data", commonService.showTable(tableName));
 		} catch (Exception e) {
-			result.put("errMsg", "系统错误");
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
 		return result;
-	}
-
-	@RequestMapping
-	public String index(Model model) {
-		try {
-			model.addAttribute("tables", commonService.showTables());
-		} catch (Exception e) {
-			model.addAttribute("errMsg", "系统错误");
-		}
-		return "/index";
 	}
 
 	/**
@@ -102,14 +102,14 @@ public class CommonController extends BaseController {
 			}
 			page.setPd(pd);
 		}
-		List<PageData> list = commonService.findPage(page);
+		List<Result> list = commonService.findPage(page);
 		List<PageData> datas = new ArrayList<PageData>();
-		for (PageData pageData : list) {
+		for (Result data : list) {
 			try {
-				datas.add(new PageData("data", pageData).put("json",
-						objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(pageData)));
+				datas.add(new PageData("data", data).put("json",
+						objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data)));
 			} catch (Exception e) {
-				logger.error(e.toString(), e);
+				LOGGER.error(e.toString(), e);
 			}
 		}
 		model.addAttribute("datas", datas);
@@ -132,7 +132,7 @@ public class CommonController extends BaseController {
 			model.addAttribute("table", table);
 			model.addAttribute("columns", commonService.showTableColumns(table));
 		} catch (Exception e) {
-			model.addAttribute("errMsg", "系统错误");
+			LOGGER.error(e.toString(), e);
 		}
 		return "/form";
 	}
@@ -144,15 +144,15 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}", method = RequestMethod.GET)
-	public PageData datas(@PathVariable String table, Page page, String column, String keyword) {
-		PageData result = new PageData("errMsg", "success");
+	public Result datas(@PathVariable String table, Page page, String column, String keyword) {
+		Result result = Result.success();
 		page.setTable(table);
 		if (column != null && !column.equals("") && keyword != null && !keyword.equals("")) {
 			PageData pd = new PageData().put("like", new PageData(column, keyword));
 			page.setPd(pd);
 		}
-		result.put("data", commonService.findPage(page)).put("page", page);
-		logger.info("查询 {} 列表数据", table);
+		result.put("rows", commonService.findPage(page)).put("page", page);
+		LOGGER.info("查询 {} 列表数据", table);
 		return result;
 	}
 
@@ -164,10 +164,10 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.GET)
-	public PageData data(@PathVariable String table, @PathVariable String id) {
-		PageData result = new PageData("errMsg", "success");
+	public Result data(@PathVariable String table, @PathVariable String id) {
+		Result result = Result.success();
 		result.put("data", commonService.load(table, new PageData("id", id)));
-		logger.info("查询 {} 单条数据 id={}", table, id);
+		LOGGER.info("查询 {} 单条数据 id={}", table, id);
 		return result;
 	}
 
@@ -179,17 +179,14 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}", method = RequestMethod.POST)
-	public PageData add(@PathVariable String table, @RequestBody PageData data) {
-		PageData result = new PageData("errMsg", "success");
+	public Result add(@PathVariable String table, @RequestBody PageData data) {
+		Result result = Result.success();
 		try {
 			commonService.add(table, data);
-			logger.info("新增 {} 数据", table);
-		} catch (BusinessException e) {
-			logger.warn(e.getErrMsg());
-			result.put("errMsg", e.getErrMsg());
+			LOGGER.info("新增 {} 数据", table);
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-			result.put("errMsg", "系统错误");
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
 		return result;
 	}
@@ -203,17 +200,14 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.PUT)
-	public PageData edit(@PathVariable String table, @PathVariable String id, @RequestBody PageData data) {
-		PageData result = new PageData("errMsg", "success");
+	public Result edit(@PathVariable String table, @PathVariable String id, @RequestBody PageData data) {
+		Result result = Result.success();
 		try {
 			commonService.edit(table, data, new PageData("id", id));
-			logger.info("修改 {} 数据 id={}", table, id);
-		} catch (BusinessException e) {
-			logger.warn(e.getErrMsg());
-			result.put("errMsg", e.getErrMsg());
+			LOGGER.info("修改 {} 数据 id={}", table, id);
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-			result.put("errMsg", "系统错误");
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
 		return result;
 	}
@@ -226,17 +220,14 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/{table}/{id}", method = RequestMethod.DELETE)
-	public PageData delete(@PathVariable String table, @PathVariable String id) {
-		PageData result = new PageData("errMsg", "success");
+	public Result delete(@PathVariable String table, @PathVariable String id) {
+		Result result = Result.success();
 		try {
 			commonService.delete(table, new PageData("id", id));
-			logger.info("删除 {} 数据 id={}", table, id);
-		} catch (BusinessException e) {
-			logger.warn(e.getErrMsg());
-			result.put("errMsg", e.getErrMsg());
+			LOGGER.info("删除 {} 数据 id={}", table, id);
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-			result.put("errMsg", "系统错误");
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
 		return result;
 	}
@@ -247,11 +238,10 @@ public class CommonController extends BaseController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
-	public Map<String, String> uploadFile(MultipartFile file, HttpServletRequest request) {
-		Map<String, String> map = new HashMap<String, String>();
-		map.put("fileName", file.getOriginalFilename());
-		map.put("url", this.upload(file, request));
-		return map;
+	public Result uploadFile(MultipartFile file, HttpServletRequest request) {
+		Result result = this.upload(file, request);
+		result.put("fileName", file.getOriginalFilename());
+		return result;
 	}
 
 	/**
@@ -260,26 +250,39 @@ public class CommonController extends BaseController {
 	 * @param uploadPath 文件保存位置
 	 * @return 返回附件访问路径
 	 */
-	private String upload(MultipartFile file, HttpServletRequest request) {
+	private Result upload(MultipartFile file, HttpServletRequest request) {
+		Result result = Result.success();
 		// 文件目录按时间归类文件夹
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 		String dateDir = dateFormat.format(new Date());
 		String path = "upload/" + dateDir;
-		Random random = new Random();
+		int randomNum = new Random().nextInt(10000);
+		String random = "";
 		String extName = "";
 		if (file.getOriginalFilename().lastIndexOf(".") >= 0) {
 			extName = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
 		}
-		path += "/" + random.nextInt(10000) + System.currentTimeMillis() + extName;
+		if (randomNum < 10) {
+			random = "000" + randomNum;
+		} else if (randomNum < 100) {
+			random = "00" + randomNum;
+		} else if (randomNum < 1000) {
+			random = "0" + randomNum;
+		} else {
+			random = "" + randomNum;
+		}
+		path += "/" + System.currentTimeMillis() + "_" + random + extName;
 		File f = new File(request.getSession().getServletContext().getRealPath("/" + path));
 		if (!f.getParentFile().exists()) {
 			f.getParentFile().mkdirs();
 		}
 		try {
 			file.transferTo(f);
+			result.put("filePath", path);
 		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
+			LOGGER.error(e.toString(), e);
+			result.error(e);
 		}
-		return path;
+		return result;
 	}
 }
